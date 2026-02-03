@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shkruaj saktë</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+    }
+
+    .wrong {
+      color: red;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    h2, h3 {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Shkruaj saktë</h2>
+
+  <textarea id="textInput" placeholder="Shkruaj fjalët këtu..."></textarea>
+  <br><br>
+
+  <button onclick="checkSpelling()">Kontrollo</button>
+
+  <h3>Përfundimi:</h3>
+  <div id="output"></div>
+
+  <h3>E sakta:</h3>
+  <ul id="corrections"></ul>
+
+  <script>
+    // VERY SMALL Albanian dictionary
+    const dictionary = [
+      "unë", "shkoj", "në", "shkollë", "çdo", "ditë", "dritë", "shembull",
+      "certefikatë", "tradhti", "fjalë", "sot", "njeri", "njerëz", "kam",
+      "jam", "isha", "ëndrra", "mbaroj", "shkruaj", "s'e di", "se", "sepse",
+      "një", "nxënës", "shembullor", "saktë", "drejtim", "bukur", "zëëmbël",
+      "për", "të", "te", "ti", "t'i", "fitoj", "fituar", "dituri", "dije", "dje", "vajza", "e"
+    ];
+
+    // Normalize common Albanian spelling mistakes
+    function normalizeAlbanianWord(word) {
+      let w = word.toLowerCase();
+
+      // Replace all 'c' with 'ç'
+      w = w.replace(/c/g, 'ç');
+
+      // Optional: handle missing 'ë' at the end
+      if (!w.endsWith('ë')) {
+        w += 'ë'; // temporarily add ë for checking
+      }
+
+      return w;
+    }
+
+    // Function to find the closest word in the dictionary
+    function findClosestWord(word) {
+      let closest = "";
+      let minDistance = Infinity;
+
+      for (let dictWord of dictionary) {
+        let distance = levenshteinDistance(word.toLowerCase(), dictWord.toLowerCase());
+        if (distance < minDistance) {
+          minDistance = distance;
+          closest = dictWord;
+        }
+      }
+
+      return closest;
+    }
+
+    // Function to calculate Levenshtein distance (difference between two words)
+    function levenshteinDistance(a, b) {
+      const matrix = [];
+
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, 
+              matrix[i][j - 1] + 1,     
+              matrix[i - 1][j] + 1      
+            );
+          }
+        }
+      }
+
+      return matrix[b.length][a.length];
+    }
+
+    // Main spell checking function
+    function checkSpelling() {
+      const text = document.getElementById("textInput").value;
+      const words = text.split(" ");
+
+      let outputText = "";
+      let correctionsList = "";
+
+      for (let word of words) {
+        let cleanWord = normalizeAlbanianWord(word);
+
+        if (dictionary.includes(cleanWord)) {
+          outputText += word + " ";
+        } else {
+          outputText += "<span class='wrong'>" + word + "</span> ";
+          let suggestion = findClosestWord(cleanWord);
+          correctionsList += "<li>" + word + " → " + suggestion + "</li>";
+        }
+      }
+
+      document.getElementById("output").innerHTML = outputText;
+      document.getElementById("corrections").innerHTML = correctionsList;
+    }
+  </script>
+
+</body>
+</html>
